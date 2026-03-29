@@ -10,7 +10,7 @@ An ESP32-powered solar tracking system that maximizes energy efficiency by align
 * **Environmental Monitoring:** Real-time Temperature and Humidity data via DHT11.
 * **Live Analytics:** 5-minute rolling voltage chart and visual gauges.
 * **RESTful API:** Provides JSON endpoints for status and remote control.
-* **Standalone AP:** Operates as its own Wi-Fi Access Point (`SolarLinkPanel`).
+* **Standalone AP:** Operates as its own Wi-Fi Access Point (`Elsafra`).
 
 ## 🛠️ Hardware Requirements
 
@@ -79,9 +79,10 @@ A responsive single-page application (SPA) built with vanilla HTML5, CSS3, and J
 1.  **Arduino IDE Setup:**
     * Install the `ESP32Servo` and `DHT sensor library` (by Adafruit).
 2.  **Calibration:**
-    * Adjust `ldrOffset` and `Kp` in the "STATE" section of the ESP32 code to calibrate for your specific LDR sensitivity and lighting environment.
+    * Adjust `ldrOffset`, `Kp` and `error` in the "STATE" section of the ESP32 code to calibrate for your specific LDR sensitivity and lighting environment.
+    * Adjust `weight` in "autoAdjustServo" function.
 3.  **Deployment:**
     * Flash the ESP32 code.
-    * Connect your PC/Phone to the Wi-Fi network **SolarLinkPanel** (Password: `12345678`).
+    * Connect your PC/Phone to the Wi-Fi network **Elsafra** (Password: `12345678`).
 4.  **Accessing the Dashboard:**
     * Open the `index.html` file in your browser. It will automatically connect to `http://192.168.4.1`.
