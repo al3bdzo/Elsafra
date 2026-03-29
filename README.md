@@ -15,7 +15,8 @@ An ESP32-powered solar tracking system that maximizes energy efficiency by align
 ## 🛠️ Hardware Requirements
 
 * **Microcontroller:** ESP32
-* **Sensors:** * 2x LDR (Light Dependent Resistors)
+* **Sensors:** 
+    * 2x LDR (Light Dependent Resistors)
     * 1x DHT11 (Temperature & Humidity)
     * Voltage Divider circuit (for ADC 36)
 * **Actuators:** 1x Servo Motor (SG90 or MG995)
