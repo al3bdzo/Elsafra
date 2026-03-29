@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Elsafra Solar Monitor</title>
+
+  <script src="charts.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: auto;
+      padding: 20px;
+      background: #f4f6f8;
+    }
+
+    .box {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .value {
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .gauge {
+      width: 100%;
+      height: 30px;
+      background: #ddd;
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .gauge-fill {
+      height: 100%;
+      width: 0%;
+      background: green;
+      transition: width 0.5s;
+    }
+
+    input[type=range] {
+      width: 100%;
+      cursor: pointer;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-top: 10px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    
+    button:active {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>🌞 Elsafra Solar Monitoring Dashboard</h1>
+
+<div class="box">
+  <h2>📊 Sensor Data</h2>
+  <p>Temperature: <span class="value" id="temp">-</span> °C</p>
+  <p>Humidity: <span class="value" id="hum">-</span> %</p>
+  <p>Voltage: <span class="value" id="volt">-</span> V</p>
+</div>
+
+<div class="box">
+  <h2>🔋 Voltage </h2>
+  <div class="gauge">
+    <div class="gauge-fill" id="gauge"></div>
+  </div>
+</div>
+
+<div class="box">
+  <h2>📈 Voltage (Last 5 Minutes)</h2>
+  <canvas id="chart"></canvas>
+</div>
+
+<div class="box">
+  <h2>🎮 Control</h2>
+
+  <label>
+    <input type="checkbox" id="manualToggle">
+    Manual Mode
+  </label>
+
+  <p>Servo Angle: <span id="angleValue">90</span>°</p>
+
+  <input type="range" min="0" max="180" value="90" id="angleSlider">
+
+  <button onclick="sendControl()">Apply Changes</button>
+</div>
+
+<script>
+const ESP_IP = "http://192.168.4.1";
+
+// ===== STATE FLAGS =====
+let userIsSliding = false;
+let userChangingMode = false;
+
+// ===== Chart Setup =====
+const ctx = document.getElementById('chart').getContext('2d');
+let voltageData = [];
+let labels = [];
+
+const chart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: labels,
+    datasets: [{
+      label: 'Voltage (V)',
+      data: voltageData,
+      borderColor: '#007bff',
+      fill: false,
+      tension: 0.2
+    }]
+  },
+  options: {
+    scales: {
+      y: { min: 0, max: 5 }
+    }
+  }
+});
+
+// ===== Fetch Data =====
+async function updateData() {
+  try {
+    const res = await fetch(ESP_IP + "/status");
+    const data = await res.json();
+
+    // Sensor values
+    document.getElementById('temp').innerText = data.temperature ?? "-";
+    document.getElementById('hum').innerText = data.humidity ?? "-";
+    document.getElementById('volt').innerText = data.voltage ?? "-";
+
+    let percent = (data.voltage / 5) * 100;
+    document.getElementById('gauge').style.width = percent + "%";
+
+    // Chart update
+    voltageData.push(data.voltage);
+    labels.push("");
+    if (voltageData.length > 300) {
+      voltageData.shift();
+      labels.shift();
+    }
+    chart.update('none'); 
+
+    // Mode Toggle Sync
+    if (!userChangingMode) {
+      document.getElementById('manualToggle').checked = data.manual;
+    }
+
+    const slider = document.getElementById('angleSlider');
+    slider.disabled = !document.getElementById('manualToggle').checked;
+
+    if (!userIsSliding) {
+      slider.value = data.servo;
+      document.getElementById('angleValue').innerText = data.servo;
+    }
+
+  } catch (e) {
+    console.log("Fetch Error:", e);
+  }
+}
+
+// ===== Control Action =====
+async function sendControl() {
+  const manual = document.getElementById('manualToggle').checked ? 1 : 0;
+  const angle = document.getElementById('angleSlider').value;
+
+  try {
+    await fetch(`${ESP_IP}/control?manual=${manual}&angle=${angle}`);
+    setTimeout(() => {
+        userChangingMode = false;
+        userIsSliding = false;
+    }, 1500);
+  } catch (e) {
+    console.error("Apply Error:", e);
+  }
+}
+
+// ===== Event Listeners =====
+const slider = document.getElementById('angleSlider');
+const toggle = document.getElementById('manualToggle');
+
+toggle.addEventListener('change', () => {
+  userChangingMode = true;
+});
+
+// Support for both Mouse and Touch (Mobile)
+const startInteraction = () => { userIsSliding = true; };
+const endInteraction = () => { 
+};
+
+slider.addEventListener('mousedown', startInteraction);
+slider.addEventListener('touchstart', startInteraction);
+
+slider.addEventListener('mouseup', endInteraction);
+slider.addEventListener('touchend', endInteraction);
+
+slider.addEventListener('input', function() {
+  document.getElementById('angleValue').innerText = this.value;
+  userIsSliding = true; 
+});
+
+// ===== Auto Refresh =====
+setInterval(updateData, 1000);
+updateData();
+</script>
+
+</body>
+</html>
